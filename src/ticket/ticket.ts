@@ -1,49 +1,49 @@
 const base32Decode = require('base32-decode');
 const { base32Encode } = require('./b32encode');
 
-enum TicketType {
+export enum TicketType {
   node = 'node',
   blob = 'blob',
   doc = 'doc',
 }
 
-interface Ticket {
+export interface Ticket {
   type: TicketType;
 }
 
-type NodeTicket = {
+export type NodeTicket = {
   type: TicketType.node;
   node?: NodeAddr;
 }
 
-type NodeAddr = {
+export type NodeAddr = {
   node_id: String;
   info: AddrInfo;
 }
 
-type AddrInfo = {
+export type AddrInfo = {
   derp_url?: String;
   direct_addresses: String[];
 }
 
-enum BlobFormat {
+export enum BlobFormat {
   HashSeq = 'HashSeq',
   Raw = 'Raw',
 }
 
-type BlobTicket = {
+export type BlobTicket = {
   type: TicketType.blob;
   node?: NodeAddr;
   format: BlobFormat;
   hash: string;
 }
 
-enum DocCapability {
+export enum DocCapability {
   Read = 'Read',
   Write = 'Write',
 }
 
-type DocTicket = {
+export type DocTicket = {
   type: TicketType.doc;
   capability: DocCapability;
   namespace: string;

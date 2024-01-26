@@ -78,7 +78,6 @@ class PostcardDecoder {
     this.textDecoder = new TextDecoder('utf-8');
     const decoded = base32Decode(encodedData.toUpperCase(), 'RFC4648', { loose: true });
     this.buffer = new Uint8Array(decoded);
-    console.log(this.buffer)
   }
 
   // Main method to decode the entire data
@@ -185,7 +184,6 @@ class PostcardDecoder {
 
   private readNodeAddrs(): NodeAddr[] {
     const numAddrs = this.readVarint();
-    console.log('found nodes:', numAddrs);
     if (numAddrs > 0) {
       const addrs: NodeAddr[] = [];
       for (let i = 0; i < numAddrs; i++) {
@@ -218,7 +216,6 @@ class PostcardDecoder {
     let derpUrl = undefined;
     if (derpUrlExists) {
       derpUrl = this.readString();
-      console.log('derpUrl exists!:', derpUrl);
     }
 
     const directAddresses = this.readAddresses();

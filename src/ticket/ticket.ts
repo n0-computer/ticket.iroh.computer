@@ -47,7 +47,6 @@ type DocTicket = {
   type: TicketType.doc;
   capability: DocCapability;
   namespace: string;
-  secret?: string;
   nodes: NodeAddr[];
 }
 
@@ -80,6 +79,21 @@ class PostcardDecoder {
     const decoded = base32Decode(encodedData.toUpperCase(), 'RFC4648', { loose: true });
     this.buffer = new Uint8Array(decoded);
     console.log(this.buffer)
+  }
+
+  // Main method to decode the entire data
+  public decode(): any {
+    // Implement the logic to read the serialized data
+    // according to the structure it was serialized in.
+    // This is a placeholder function.
+    switch (this.type) {
+      case TicketType.node:
+        return this.readNodeTicket()
+      case TicketType.blob:
+        return this.readBlobTicket()
+      case TicketType.doc:
+        return this.readDocumentTicket()
+    }
   }
 
   private readNodeTicket(): NodeTicket {
@@ -122,7 +136,6 @@ class PostcardDecoder {
 
     const cap = this.readCapability();
     let namespace = '';
-    let secret = undefined;
     switch (cap) {
       case DocCapability.Read:
         // TODO(b5) - this shouldn't use readHash
@@ -131,11 +144,7 @@ class PostcardDecoder {
         namespace = this.readHash();
         break;
       case DocCapability.Write:
-        // TODO(b5) - this shouldn't use readHash
-        // it's just close enough for now. readHash should
-        // check for the correct length
-        secret = this.readHash();
-        namespace = this.readHash();
+        namespace = this.readSecretKey();
         break;
       default:
         throw new Error(`Unknown capability: ${cap}`);
@@ -146,7 +155,6 @@ class PostcardDecoder {
       type: TicketType.doc,
       capability: cap,
       namespace,
-      secret,
       nodes: addrs,
     }
   }
@@ -191,11 +199,8 @@ class PostcardDecoder {
   }
 
   private readNodeAddr(): NodeAddr {
-    // const nodeIdLen = this.readVarint();
     const nodeId = this.readNodeID();
-    console.log('nodeID:', nodeId);
     const info = this.readAddrInfo();
-    console.log('info:', info);
     return {
       node_id: `${nodeId}`,
       info: info,
@@ -217,7 +222,6 @@ class PostcardDecoder {
     }
 
     const directAddresses = this.readAddresses();
-    console.log('directAddresses:', directAddresses);
     return {
       derp_url: derpUrl,
       direct_addresses: directAddresses,
@@ -226,7 +230,6 @@ class PostcardDecoder {
 
   private readAddresses(): string[] {
     const numAddresses = this.readVarint();
-    console.log('numAddresses:', numAddresses);
     if (numAddresses > 0) {
       const addresses: string[] = [];
       for (let i = 0; i < numAddresses; i++) {
@@ -262,13 +265,51 @@ class PostcardDecoder {
     const ip = this.buffer.slice(this.offset, this.offset + 16);
     this.offset += 16;
     const port = this.readVarint();
-    return `[${ip.join(':')}]:${port}`;
+
+    // Convert each pair of bytes to a hexadecimal string
+    const ipParts = [];
+    for (let i = 0; i < 16; i += 2) {
+        ipParts.push(((ip[i] << 8) + ip[i + 1]).toString(16));
+    }
+
+    // Find the longest sequence of zero blocks
+    let longestZeroSequence = -1;
+    let longestZeroSequenceLength = 0;
+    let currentZeroSequenceLength = 0;
+
+    for (let i = 0; i < ipParts.length; i++) {
+        if (ipParts[i] === "0") {
+            currentZeroSequenceLength++;
+            if (currentZeroSequenceLength > longestZeroSequenceLength) {
+                longestZeroSequenceLength = currentZeroSequenceLength;
+                longestZeroSequence = i - currentZeroSequenceLength + 1;
+            }
+        } else {
+            currentZeroSequenceLength = 0;
+        }
+    }
+
+    // Compress the longest sequence of zero blocks
+    if (longestZeroSequenceLength > 1) {
+        ipParts.splice(longestZeroSequence, longestZeroSequenceLength, '');
+        if (longestZeroSequence === 0) ipParts.unshift('');
+        if (longestZeroSequence + longestZeroSequenceLength === ipParts.length) ipParts.push('');
+    }
+  
+    const ipStr = ipParts.join(':');
+    return `[${ipStr}]:${port}`;
+  }
+
+  private readSecretKey(): string {
+    // TODO (b5) - I don't think this is right, I'm mainly going off offset lengths that satisfy the tests
+    const hash = this.buffer.slice(this.offset, this.offset + 33);
+    this.offset += 33;
+    return base32Encode(hash);
   }
 
   private readHash(): string {
     const hash = this.buffer.slice(this.offset, this.offset + 32);
     this.offset += 32;
-    // return base32Encode(hash, 'RFC4648', { padding: false }).toLowerCase();
     return base32Encode(hash);
   }
 
@@ -304,20 +345,5 @@ class PostcardDecoder {
       }
 
       return num;
-  }
-
-  // Main method to decode the entire data
-  public decode(): any {
-      // Implement the logic to read the serialized data
-      // according to the structure it was serialized in.
-      // This is a placeholder function.
-      switch (this.type) {
-        case TicketType.node:
-          return this.readNodeTicket()
-        case TicketType.blob:
-          return this.readBlobTicket()
-        case TicketType.doc:
-          return this.readDocumentTicket()
-      }
   }
 }

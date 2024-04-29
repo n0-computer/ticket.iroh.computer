@@ -1,11 +1,18 @@
 "use client"
-import React, { useState } from "react";
-import { parse } from '@/ticket/ticket';
+import React, { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+
 import TicketInfo from "@/components/TicketInfo";
 
 
 export default function Home() {
-  const [ticket, setTicket] = useState("");
+  const initialStr = useSearchParams().get("ticket") || "";
+  const [ticket, setTicket] = useState<string>(initialStr);
+  useEffect(() => {
+    if (initialStr) {
+      setTicket(initialStr);
+    }
+  }, [initialStr]);
 
   return (
     <main

@@ -1,5 +1,9 @@
 const base32Decode = require('base32-decode');
-const { base32Encode } = require('./b32encode');
+const base32Encoder = require('base32-encode');
+
+function base32Encode(input: Uint8Array) {
+  return base32Encoder(input, 'RFC4648', { padding: false }).toLowerCase()
+}
 
 export enum TicketType {
   node = 'node',

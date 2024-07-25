@@ -106,7 +106,7 @@ function AddrInfo({ info } : { info: AddrInfo }) {
   return (
     <div className='mt-5'>
       <div className='mt-2'>
-        <p className='text-sm text-zinc-500'>DERP URL</p>
+        <p className='text-sm text-zinc-500'>RELAY URL</p>
         <p className='text-sm'>{info.derp_url}</p>
       </div>
       <div className='mt-2'>

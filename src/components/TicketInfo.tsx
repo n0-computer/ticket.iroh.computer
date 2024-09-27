@@ -6,12 +6,13 @@ type Props = {
 }
 
 export default function TicketInfo({ ticketString }: Props) {
-  if (ticketString.trim() === "") return null;
+  const ticketTrimmed = ticketString.trim();
+  if (ticketTrimmed === "") return null;
 
   let parsed: Ticket | undefined = undefined;
   let error = undefined;
   try {
-    parsed = parse(ticketString);
+    parsed = parse(ticketTrimmed);
   } catch (e) {
     error = e;
   }
